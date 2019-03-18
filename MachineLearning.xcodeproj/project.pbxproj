@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		04F2119B22395CD0007C74E2 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04F2119A22395CD0007C74E2 /* main.cpp */; };
+		04F2119B22395CD0007C74E2 /* ml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 04F2119A22395CD0007C74E2 /* ml.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +24,9 @@
 
 /* Begin PBXFileReference section */
 		04F2119722395CD0007C74E2 /* MachineLearning */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MachineLearning; sourceTree = BUILT_PRODUCTS_DIR; };
-		04F2119A22395CD0007C74E2 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		04F2119A22395CD0007C74E2 /* ml.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ml.cpp; sourceTree = "<group>"; };
+		04F211A122395DA7007C74E2 /* Hopfield.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Hopfield.h; sourceTree = "<group>"; };
+		04F211A2223AF6EA007C74E2 /* input.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = input.h; path = "/Users/MAC/Desktop/Minh Nguyen/UIUC/2018-2019/SPRING 19/PHYS 498CMP/Project 3 - Machine Learning/MachineLearning/MachineLearning/input.h"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,7 +59,9 @@
 		04F2119922395CD0007C74E2 /* MachineLearning */ = {
 			isa = PBXGroup;
 			children = (
-				04F2119A22395CD0007C74E2 /* main.cpp */,
+				04F211A2223AF6EA007C74E2 /* input.h */,
+				04F2119A22395CD0007C74E2 /* ml.cpp */,
+				04F211A122395DA7007C74E2 /* Hopfield.h */,
 			);
 			path = MachineLearning;
 			sourceTree = "<group>";
@@ -118,7 +122,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				04F2119B22395CD0007C74E2 /* main.cpp in Sources */,
+				04F2119B22395CD0007C74E2 /* ml.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
