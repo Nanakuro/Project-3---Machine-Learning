@@ -27,6 +27,7 @@
 		04F2119A22395CD0007C74E2 /* ml.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ml.cpp; sourceTree = "<group>"; };
 		04F211A122395DA7007C74E2 /* Hopfield.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Hopfield.h; sourceTree = "<group>"; };
 		04F211A2223AF6EA007C74E2 /* input.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = input.h; path = "/Users/MAC/Desktop/Minh Nguyen/UIUC/2018-2019/SPRING 19/PHYS 498CMP/Project 3 - Machine Learning/MachineLearning/MachineLearning/input.h"; sourceTree = "<absolute>"; };
+		04F211A6224A7B99007C74E2 /* Layer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Layer.h; path = "/Users/MAC/Desktop/Minh Nguyen/UIUC/2018-2019/SPRING 19/PHYS 498CMP/Project 3 - Machine Learning/MachineLearning/MachineLearning/Layer.h"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,6 +60,7 @@
 		04F2119922395CD0007C74E2 /* MachineLearning */ = {
 			isa = PBXGroup;
 			children = (
+				04F211A6224A7B99007C74E2 /* Layer.h */,
 				04F211A2223AF6EA007C74E2 /* input.h */,
 				04F2119A22395CD0007C74E2 /* ml.cpp */,
 				04F211A122395DA7007C74E2 /* Hopfield.h */,
@@ -244,6 +246,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					/usr/local/Cellar/boost/1.69.0/include/,
+					/usr/local/Cellar/eigen/3.3.7/include/eigen3/,
+				);
+				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -252,6 +259,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					/usr/local/Cellar/boost/1.69.0/include/,
+					/usr/local/Cellar/eigen/3.3.7/include/eigen3/,
+				);
+				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

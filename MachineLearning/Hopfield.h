@@ -1,6 +1,5 @@
 //
 //  Hopfield.h
-//  Project 2 - Statistical Mechanics, Universality, and Renormalization Group
 //
 //  Created by Minh on 02/28/19.
 //  Copyright © 2019 Minh. All rights reserved.
@@ -24,10 +23,11 @@
 
 random_device rd;
 mt19937 mt(rd());
-const int num_sweeps = 1000;
+const int num_sweeps = 200000;
 //const int start_time = 0;
 string  out_folder_files    = "files/",
         out_folder_img      = "img/";
+
 
 string intToBin(unsigned int n) {
     string str = "";
@@ -56,6 +56,12 @@ inline bool fileExists (const string& name) {
 string zfill(string s, unsigned int z) {
     s = string(z - s.length(),'0') + s;
     return s;
+}
+
+string zfill(int s, unsigned int z) {
+    string str = to_string(s);
+    str = string(z - str.length(),'0') + str;
+    return str;
 }
 
 string dtos(double db, int prec) {
@@ -148,6 +154,26 @@ void WriteNetwork(int size,
     }
 }
 
+void WriteNetwork(int size,
+                  string neuronFile,
+                  mt19937 &m,
+                  bool file_exists=true) {
+    
+    if (file_exists) {
+        ofstream sp_file;
+        sp_file.open(neuronFile, fstream::trunc);
+        uniform_real_distribution<double> b_dist(-1.0,1.0);
+        for (int i=0; i < size; ++i) {
+            int node = i+1;
+            //double h = 0.0, W = 1.0;
+            int status = 1;
+            double b = b_dist(m);
+            sp_file << node << " " << status << " " << b << endl;
+        }
+        sp_file.close();
+    }
+}
+
 vector<string> randomMemories(int num_mem, int mem_size) {
     vector<string> memories(num_mem);
     for (int i=0; i<num_mem; ++i) {
@@ -159,6 +185,17 @@ vector<string> randomMemories(int num_mem, int mem_size) {
         }
     }
     return memories;
+}
+
+string readSingleMemory(string fileName) {
+    ifstream inFile(fileName);
+    if (!inFile) {
+        cerr << "Unable to open file " << fileName << endl;
+        exit(1);   // call system to stop
+    }
+    string memory;
+    inFile >> memory;
+    return memory;
 }
 
 
@@ -252,8 +289,8 @@ public:
                     other_node   = j+1;
                 double W = 0.0;
                 for (const string& mem : memories) {
-                    int current_bit  = (mem[i] == '0') ? -1 : 1,
-                        other_bit    = (mem[j] == '0') ? -1 : 1;
+                    int current_bit  = (mem[i] == '1') ? 1 : -1,
+                        other_bit    = (mem[j] == '1') ? 1 : -1;
                     W += current_bit * other_bit;
                 }
                 W /= (memories.size()*1.0);
@@ -292,7 +329,7 @@ public:
                 if (node < connection) {
                     double W = connections[i][j].second;
                     int neuron_connection = all_neurons[connection-1];
-                    E += -0.5 * W * neuron * neuron_connection;
+                    E += -W * neuron * neuron_connection;
                 }
             }
             E += b*neuron;
@@ -321,8 +358,9 @@ public:
 //    }
     
     void binToNeurons(string binary) {
+        assert(binary.size() == getNumNeurons());
         for (string::size_type i=0; i<binary.size(); ++i) {
-            all_neurons[i] = binary[i]=='1' ? 1 : -1;
+            all_neurons[i] = (binary[i]=='1') ? 1 : -1;
         }
     }
     
@@ -375,11 +413,13 @@ public:
     double getWeight(int neuron) {
         double W = 0.0;
         int idx_neur = neuron - 1;
-        for (int i=0; i<getNumNeurons(); ++i) {
-            if (i == idx_neur) { continue; }
+        for (int idx_othr=0; idx_othr<getNumNeurons(); ++idx_othr) {
+            if (idx_othr == idx_neur) { continue; }
             for (const string& mem : encoded_memories) {
-                double weight = 1.0*(mem[idx_neur]-'0') * (mem[i]-'0')
-                                    / encoded_memories.size();
+                int stat_neur   = mem[idx_neur]=='1' ? 1 : -1,
+                    stat_othr   = mem[idx_othr]=='1' ? 1 : -1;
+                double weight = 1.0*all_neurons[idx_othr]*(stat_neur)*(stat_othr)
+                                / (double)encoded_memories.size();
                 W += weight;
             }
         }
@@ -387,7 +427,7 @@ public:
     }
     
     void updateSingle(int neuron) {
-        double weight = getTotalWeight(neuron);
+        double weight = getWeight(neuron);
         (weight > biases[neuron-1]) ? turnOn(neuron) : turnOff(neuron);
     }
     
@@ -402,10 +442,7 @@ public:
     
     void runMemory(string corr_img) {
         binToNeurons(corr_img);
-        const int steps = 50;
-        for (int swp=0; swp<=num_sweeps; swp+=steps) {
-            update(steps);
-        }
+        update(num_sweeps);
     }
     
     void runMemory(string corr_img, ofstream& outFile) {
@@ -461,24 +498,20 @@ Hopfield::Hopfield(string neuronFile, string bondsFile) : rd(), mt(rd()) {
         line++;
     }
     original_neurons = all_neurons;
-    connections.resize(line-1);
+    connections.resize(line);
     while (bonds_inp >> node >> link >> W) {
-        pair<int,double> link_pair = make_pair(link, W);
-        connections[node-1].push_back(link_pair);
-//        if (link >= 1) {
-//            pair<int,double> link_pair = make_pair(node, W);
-//            connections[link-1].push_back(link_pair);
-//        }
+        connections[node-1].push_back(make_pair(link, W));
+        connections[link-1].push_back(make_pair(node, W));
     }
 }
 
 Hopfield::Hopfield(string neuronFile, vector<string> memories) : rd(), mt(rd()) {
     ifstream neuron_inp(neuronFile);
-    int node, sp;
+    int neuron, status;
     int line = 0;
     double h;
-    while (neuron_inp >> node >> sp >> h) {
-        all_neurons.push_back(sp);
+    while (neuron_inp >> neuron >> status >> h) {
+        all_neurons.push_back(status);
         biases.push_back(h);
         line++;
     }

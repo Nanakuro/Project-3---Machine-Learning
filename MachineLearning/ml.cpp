@@ -6,11 +6,17 @@
 //  Copyright © 2019 Minh. All rights reserved.
 //
 #include <iostream>
+#include <boost/regex.h>
+#include <Eigen/Dense>
 
 using namespace std;
 
 #include "input.h"
 #include "Hopfield.h"
+
+double sigmoid(double x) {
+    return 1.0/(1.0 + exp(-x));
+}
 
 void printGrid(string str) {
     if (sqrt(str.size()) == (int)sqrt(str.size())) {
@@ -87,7 +93,7 @@ void RunLandscapeHopfield(int brain_size, string neur_file, string link_file) {
     
     ofstream outDigraph(out_folder_files + "landscape.digraph", fstream::trunc);
     outDigraph << "digraph landscape {" << endl;
-    for (const string &mem : input_memories) {
+    for (const string& mem : input_memories) {
         int s = binToInt(mem);
         cout << s+1 << " ";
         outDigraph << s+1 << " [shape=star, style=filled, fillcolor=red]" << endl;
@@ -106,7 +112,7 @@ void RunLandscapeHopfield(int brain_size, string neur_file, string link_file) {
     
     ofstream outConnections(out_folder_files + "landscape_connections.txt", fstream::trunc);
     for (int state=0; state<(int)pow(2.0, H_net.getNumNeurons()); ++state) {
-        string init_str = zfill(intToBin(state), H_net.getNumNeurons());
+        const string init_str = zfill(intToBin(state), H_net.getNumNeurons());
         H_net.binToNeurons(init_str);
         H_net.setNewDefault();
         for (int neur=1; neur<=H_net.getNumNeurons(); ++neur) {
@@ -126,11 +132,53 @@ void RunLandscapeHopfield(int brain_size, string neur_file, string link_file) {
     outConnections.close();
 }
 
+void RunPokemonHopfield(string neur_file, vector<string> pokemon) {
+    cout << "Getting memories..." << endl;
+    vector<string> input_memories;
+    for (const string& poke : pokemon) {
+        string mem = readSingleMemory(out_folder_files+ "pokemon/" + poke +".txt");
+        input_memories.push_back(mem);
+    }
+    int brain_size = (int)input_memories[0].size();
+    
+    cout << "Creating a Hopfield network..." << endl;
+    WriteNetwork(brain_size, neur_file, mt);
+    Hopfield HNet(neur_file, input_memories);
+    
+    cout << "Corrupting a random memory..." << endl;
+    int corr_size = 64*8*20;
+    cout << input_memories.size() << endl;
+    uniform_int_distribution<int> rand_mem(0,(int)input_memories.size()-1);
+    int mem = rand_mem(mt);
+    string rand_corrupted = input_memories[2];
+    rand_corrupted = corruptRand(rand_corrupted, corr_size);
+    
+    cout << "Running the neural network..." << endl;
+    HNet.binToNeurons(rand_corrupted);
+    int freq = 10000;
+    for (int swp=0; swp<num_sweeps; swp+=freq) {
+        cout << "Step " << swp << endl;
+        string out_file =out_folder_files+ "pokemon/pokemon_" + zfill(swp,6) + ".txt";
+        ofstream outFile(out_file, fstream::trunc);
+        outFile << HNet.getBinary();
+        HNet.update(freq);
+        outFile.close();
+    }
+    
+    string out_file =out_folder_files+ "pokemon/pokemon_" + to_string(num_sweeps) + ".txt";
+    ofstream outFile(out_file, fstream::trunc);
+    outFile << HNet.getBinary();
+    outFile.close();
+    
+    cout << endl;
+    
+    cout << "...done" << endl;
+}
+
 int main(int argc, const char * argv[]) {
-    int     brain_size          = 7;
     string  neur_file           = "neurons.txt",
-            link_file           = "links.txt",
-            input_file          = "trained_memories.txt";
+            link_file           = "links.txt";
+    vector<string> pokemon {"pikachu", "mew", "snorlax"};
 //    int num_neurons         = 100,
 //        num_init_states     = 10;
     //WriteConvergeStates("converge_states.txt", neur_file, link_file, num_neurons, num_init_states);
@@ -149,18 +197,19 @@ int main(int argc, const char * argv[]) {
     
     /*  MAKING HAMMING GRAPH
      RunHamming(brain_size, neur_file, link_file);
-    */
+     */
     
     /*  MAKING ENERGY LANDSCAPE
+    int brain_size = 7;
     RunLandscapeHopfield(brain_size, neur_file, link_file);
-    */
+     */
     
-//    WriteNetwork(brain_size, neur_file, link_file, mt);
-//    Hopfield H(neur_file, link_file);
-//    H.printConnections();
-//    for (int neur=1; neur<=H.getNumNeurons(); ++neur) {
-//        assert(H.getTotalWeight(neur) == H.getTotalWeightTest(neur));
-//    }
+    /*  REMEMBERING POKEMON IMAGES
+    RunPokemonHopfield(neur_file, pokemon);
+     */
     
+    
+    
+
     return 0;
 }
