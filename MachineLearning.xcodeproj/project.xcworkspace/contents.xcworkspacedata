@@ -2,6 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:/Users/MAC/Desktop/Minh Nguyen/UIUC/2018-2019/SPRING 19/PHYS 498CMP/Project 3 - Machine Learning/MachineLearning/MachineLearning/misc.h">
+   </FileRef>
+   <FileRef
       location = "group:/Users/MAC/Desktop/Minh Nguyen/UIUC/2018-2019/SPRING 19/PHYS 498CMP/Project 3 - Machine Learning/MachineLearning/MachineLearning/Layer.h">
    </FileRef>
    <FileRef
