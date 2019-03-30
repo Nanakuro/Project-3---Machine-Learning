@@ -9,12 +9,6 @@
 #define Layer_h
 
 #include "misc.h"
-#include <Eigen/Dense>
-using namespace Eigen;
-
-double sigmoid(double x) {
-    return 1.0/(1.0 + exp(-x));
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,91 +17,78 @@ double sigmoid(double x) {
 class Layer {
     static int num_layer;
     int lay, num_input, num_output;
-    MatrixXd Weights;
-    VectorXd bias;
+    VectorXd dfdy;
 public:
+    MatrixXd Weights, dCdW;
+    VectorXd bias, dCdb;
     VectorXd input, output;
+    double (*f)(double);
     
     Layer();
     Layer(int, int);
+    Layer(int, int, double (*F)(double));
     
-    int layer()             { return lay; }
-    int inSize()            { return num_input; }
-    int outSize()           { return num_output; }
-    MatrixXd getWeights()   { return Weights; }
-    VectorXd getBias()      { return bias; }
+    void setFunc(double (*func)(double))        { f = func; }
+    void setLayer(int l)                        { lay = l; }
+    void setdfdy()                              { dfdy = output.cwiseProduct(VectorXd::Ones(output.size())-output);}
+    int layer()                                 { return lay; }
+    int inSize()                                { return num_input; }
+    int outSize()                               { return num_output; }
+    
+    void print() {
+        cout << "LAYER " << lay << ":" << endl
+             << "Input:\n" << input << endl
+             << "\nWeights:\n" << Weights << endl
+             << "\nBias:\n" << bias << endl << endl;
+    }
     
     VectorXd evaluate() {
-        output = Weights * input;
-        output += bias;
-        output = output.unaryExpr(&sigmoid);
+        assert(input.size() != 0);
+        output = Weights*input + bias;
+        output = output.unaryExpr(f);
+        setdfdy();
         return output;
     }
     
     VectorXd evaluate(VectorXd inV) {
-        output = Weights * inV;
-        output += bias;
-        output = output.unaryExpr(&sigmoid);
-        return output;
+        assert(inV.size() != 0);
+        input = inV;
+        evaluate();
     }
+    
 };
 
 int Layer::num_layer = 0;
 
 Layer::Layer() {
-    lay = ++num_layer;
-    num_input  = 3;
-    num_output = 3;
+    lay = num_layer++;
+    f = &sigmoid;
+    num_input  = 2;
+    num_output = num_input;
     uniform_real_distribution<double> rand(-1,1);
     Weights = MatrixXd::NullaryExpr(num_output, num_input, [&]() { return rand(mt); });
-    bias    = VectorXd::NullaryExpr(num_output, [&]() { return rand(mt); });
+    bias    = VectorXd::NullaryExpr(num_output,            [&]() { return rand(mt); });
 }
 
 Layer::Layer(int n_in, int n_out) {
-    lay = ++num_layer;
+    lay = num_layer++;
+    f = &sigmoid;
     num_input = n_in;
     num_output = n_out;
     uniform_real_distribution<double> rand(-1,1);
     Weights = MatrixXd::NullaryExpr(num_output, num_input, [&]() { return rand(mt); });
-    bias    = VectorXd::NullaryExpr(num_output, [&]() { return rand(mt); });
+    bias    = VectorXd::NullaryExpr(num_output,            [&]() { return rand(mt); });
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class FFNN {
-    int num_lay;
-    vector<Layer> Layers;
-    VectorXd input, output;
-public:
-    FFNN(int);
-    FFNN(vector<int>);
-    
-    VectorXd evaluate() {
-        output = input.replicate<1,1>();
-        for (int i=0; i<Layers.size(); ++i) {
-        }
-        return output;
-    }
-};
-
-FFNN::FFNN(int num_layers) {
-    num_lay = num_layers;
-    Layers.resize(num_lay);
-    for (int i=0; i<num_lay; ++i) {
-        Layers[i] = Layer();
-    }
+Layer::Layer(int n_in, int n_out, double (*func)(double)) {
+    lay = num_layer++;
+    f = func;
+    num_input = n_in;
+    num_output = n_out;
+    uniform_real_distribution<double> rand(-1,1);
+    Weights = MatrixXd::NullaryExpr(num_output, num_input, [&]() { return rand(mt); });
+    bias    = VectorXd::NullaryExpr(num_output,            [&]() { return rand(mt); });
 }
 
-FFNN::FFNN(vector<int> layer_neurons) {
-    num_lay = (int)layer_neurons.size() - 1;
-    Layers.resize(num_lay);
-    for (int i=0; i<num_lay; ++i) {
-        int n_in  = layer_neurons[i],
-            n_out = layer_neurons[i+1];
-        Layers[i] = Layer(n_in, n_out);
-    }
-}
 
 #endif /* Layer_h */

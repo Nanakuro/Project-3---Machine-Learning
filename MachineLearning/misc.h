@@ -22,11 +22,14 @@
 #include <cstring>
 #include <algorithm>
 
+#include <Eigen/Dense>
 using namespace std;
+using namespace Eigen;
 
 random_device rd;
 mt19937 mt(rd());
 const int num_sweeps = 200000;
+const double delta = 1E-9;
 //const int start_time = 0;
 string  out_folder_files    = "files/",
         out_folder_img      = "img/";
@@ -123,6 +126,39 @@ string corruptLeft(string str, double frac) {
         }
     }
     return str;
+}
+
+
+double sigmoid(double x) {
+    return 1.0/(1.0 + exp(-x));
+}
+
+double CostQuad(VectorXd& outV, VectorXd& expV) {
+    assert(outV.size() == expV.size());
+    VectorXd v = outV - expV;
+    return v.dot(v);
+}
+
+double CostCrossEntropy(VectorXd& outV, VectorXd& expV) {
+    assert(outV.size() == expV.size());
+    VectorXd ones = VectorXd::Ones(outV.size());
+    VectorXd logOutV = outV.array().log().matrix();
+    VectorXd log1minusOutV = (ones-outV).array().log().matrix();
+    VectorXd CVec = -expV.cwiseProduct(logOutV) - (ones-expV).cwiseProduct(log1minusOutV);
+    return CVec.sum();
+}
+
+VectorXd dSigmoid_dz(VectorXd& y) {
+    VectorXd ones = VectorXd::Ones(y.size());
+    VectorXd fy = y.unaryExpr(sigmoid);
+    return (fy).cwiseProduct(ones - fy);
+}
+
+VectorXd dC_dz(VectorXd& outV, VectorXd& expV) {
+    assert(outV.size() == expV.size());
+    VectorXd ones = VectorXd::Ones(outV.size());
+    VectorXd dCdz = -expV.cwiseQuotient(outV) + (ones-expV).cwiseQuotient(ones-outV);
+    return dCdz;
 }
 
 #endif /* misc_h */
