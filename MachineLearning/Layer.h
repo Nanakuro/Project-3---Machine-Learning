@@ -19,8 +19,8 @@ class Layer {
     int lay, num_input, num_output;
     VectorXd dfdy;
 public:
-    MatrixXd Weights, dCdW;
-    VectorXd bias, dCdb;
+    MatrixXd Weights, dCdW, dCdW_temp;
+    VectorXd bias, dCdb, dCdb_temp;
     VectorXd input, output;
     double (*f)(double);
     
@@ -31,6 +31,7 @@ public:
     void setFunc(double (*func)(double))        { f = func; }
     void setLayer(int l)                        { lay = l; }
     void setdfdy()                              { dfdy = output.cwiseProduct(VectorXd::Ones(output.size())-output);}
+    VectorXd getdfdy()                          { return dfdy; }
     int layer()                                 { return lay; }
     int inSize()                                { return num_input; }
     int outSize()                               { return num_output; }
@@ -42,7 +43,7 @@ public:
              << "\nBias:\n" << bias << endl << endl;
     }
     
-    VectorXd evaluate() {
+    VectorXd feedForward() {
         assert(input.size() != 0);
         output = Weights*input + bias;
         output = output.unaryExpr(f);
@@ -50,12 +51,23 @@ public:
         return output;
     }
     
-    VectorXd evaluate(VectorXd inV) {
+    VectorXd feedForward(VectorXd inV) {
         assert(inV.size() != 0);
         input = inV;
-        evaluate();
+        return feedForward();
     }
     
+    void resetdC() {
+        dCdW = MatrixXd::Zero(Weights.rows(), Weights.cols());
+        dCdb = VectorXd::Zero(bias.size());
+    }
+    
+    void clearGrad() {
+        dCdW *= 0; dCdW_temp *= 0;
+        dCdb *= 0; dCdb_temp *= 0;
+        input *= 0; output *= 0;
+        dfdy *= 0;
+    }
 };
 
 int Layer::num_layer = 0;
@@ -65,7 +77,7 @@ Layer::Layer() {
     f = &sigmoid;
     num_input  = 2;
     num_output = num_input;
-    uniform_real_distribution<double> rand(-1,1);
+    uniform_real_distribution<double> rand(-0.01,0.01);
     Weights = MatrixXd::NullaryExpr(num_output, num_input, [&]() { return rand(mt); });
     bias    = VectorXd::NullaryExpr(num_output,            [&]() { return rand(mt); });
 }
@@ -75,7 +87,7 @@ Layer::Layer(int n_in, int n_out) {
     f = &sigmoid;
     num_input = n_in;
     num_output = n_out;
-    uniform_real_distribution<double> rand(-1,1);
+    uniform_real_distribution<double> rand(-0.01,0.01);
     Weights = MatrixXd::NullaryExpr(num_output, num_input, [&]() { return rand(mt); });
     bias    = VectorXd::NullaryExpr(num_output,            [&]() { return rand(mt); });
 }
@@ -85,7 +97,7 @@ Layer::Layer(int n_in, int n_out, double (*func)(double)) {
     f = func;
     num_input = n_in;
     num_output = n_out;
-    uniform_real_distribution<double> rand(-1,1);
+    uniform_real_distribution<double> rand(-0.01,0.01);
     Weights = MatrixXd::NullaryExpr(num_output, num_input, [&]() { return rand(mt); });
     bias    = VectorXd::NullaryExpr(num_output,            [&]() { return rand(mt); });
 }

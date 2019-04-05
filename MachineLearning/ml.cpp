@@ -8,6 +8,51 @@
 
 #include "FFNN.h"
 
+vector<pair<VectorXd,VectorXd>> readDataset(string data_file, string label_file) {
+    vector<pair<VectorXd,VectorXd>> Dataset;
+    string data_name  = "datasets/" + data_file,
+           label_name = "datasets/" + label_file;
+    cout << "Reading " << data_name << " & " << label_name << "...";
+    ifstream dataFile(data_name), labelFile(label_name);
+    
+    if (!dataFile || !labelFile) {
+        cout << "Unable to open file" << endl;
+        exit(1);
+    }
+    
+    string dat, lbl;
+    while ( getline(dataFile,dat) && getline(labelFile, lbl) ) {
+        vector<double> data_vec, label_vec;
+        
+        stringstream dat_ss(dat), lbl_ss(lbl);
+        double dat_n, lbl_n;
+        while (dat_ss >> dat_n) {
+            data_vec.push_back(dat_n);
+        }
+        while (lbl_ss >> lbl_n) {
+            label_vec.push_back(lbl_n);
+        }
+        VectorXd dataV  = Map<VectorXd>(data_vec.data(), data_vec.size()),
+                 labelV = Map<VectorXd>(label_vec.data(), label_vec.size());
+        
+        Dataset.push_back(make_pair(dataV, labelV));
+    }
+    dataFile.close();
+    labelFile.close();
+    
+    auto rng = default_random_engine {};
+    shuffle(begin(Dataset), end(Dataset), rng);
+    
+    cout << "done" << endl;
+    
+    
+    return Dataset;
+}
+
+vector<pair<VectorXd,VectorXd>> readDataset(string name) {
+    return readDataset(name+"Data.txt", name+"Labels.txt");
+}
+
 int main(int argc, const char * argv[]) {
 ///////////////////////////////////////// HOPFIELD NETWORK /////////////////////////////////////////
     /*  HOPFIELD PARAMETERS
@@ -47,12 +92,40 @@ int main(int argc, const char * argv[]) {
     
 ///////////////////////////////////// FEEDFORWARD NEURAL NETWORK /////////////////////////////////////
 
-//    MatrixXd mat(2,3);
-//    mat << 1,2,3,4,5,6;
-//    cout << mat << endl << endl;
-//    cout << mat(0,1) << endl;
+    /*      TRAINING AND TESTING
+    vector<pair<VectorXd,VectorXd>> Data = readDataset("training");
+    vector<pair<VectorXd,VectorXd>> Test = readDataset("test");
+    vector<pair<VectorXd,VectorXd>> betaJ = readDataset("testData.txt", "testBetaJs.txt");
     
-    vector<int> neurons {4,3,2};
+    int epochs = 100, batch = 100;
+    double eta = 0.1;
+    vector<int> neurons {100,80,1};
+    
+    FFNN myNetwork(neurons, Data);
+    myNetwork.setLearnRate(eta);
+    
+    cout << "Starting training protocol..." << endl;
+    myNetwork.gradDescBP(epochs, batch);
+    cout << "done" << endl;
+    
+    cout << "Commencing testing protocol..." << endl;
+    double success = myNetwork.test(Test);
+    cout << "done. Success rate: " << success*100 << "%" << endl;
+    
+    cout << "Writing z vs betaJ..." << endl;
+    string out_file = out_folder_files + "z_vs_betaJ.txt";
+    ofstream outFile(out_file, fstream::trunc);
+    for (int i=0; i<betaJ.size(); ++i) {
+        myNetwork.feedForward(betaJ[i].first);
+        outFile << myNetwork.getOutput()(0) << " " << betaJ[i].second(0) << endl;
+    }
+    outFile.close();
+    cout << "done" << endl;
+     */
+    
+    /*      COMPARE FINITE DIFFERENCE AND BACKPROPAGATION
+    double nu = 1.0;
+    vector<int> neurons {4,3,3,2,2};
     uniform_int_distribution<int> rand_int(0,1);
     VectorXd v1 = VectorXd::NullaryExpr(4, [&]() { return rand_int(mt); }),
              v2 = VectorXd::NullaryExpr(4, [&]() { return rand_int(mt); }),
@@ -60,21 +133,30 @@ int main(int argc, const char * argv[]) {
              v4 = VectorXd::NullaryExpr(4, [&]() { return rand_int(mt); }),
              v5 = VectorXd::NullaryExpr(2, [&]() { return rand_int(mt); });
     VectorXd v6 = v5.rowwise().reverse();
-    
+
     v1.normalize(); //cout << v1 << endl << endl;
     v2.normalize(); //cout << v2 << endl << endl;
     v3.normalize(); //cout << v3 << endl << endl;
+    v4.normalize(); //cout << v4 << endl << endl;
 
     vector<pair<VectorXd, VectorXd>> Data {make_pair(v1, v5),
                                            make_pair(v2, v5),
                                            make_pair(v3, v6),
                                            make_pair(v4, v6)};
+    cout << "##################" << endl
+         << "Finite Difference:" << endl
+         << "##################" << endl;
+    myNetwork.gradDescfinDiff();
+    myNetwork.printdC();
 
-    FFNN myNetwork(neurons, Data);
-    myNetwork.setLearnRate(1.0);
-    
-    
-    
+    myNetwork.clearGrad();
+
+    cout << "################" << endl
+         << "Backpropagation:" << endl
+         << "################" << endl;
+    myNetwork.backPropagate(0, 4);
+    myNetwork.printdC();
+    */
     
     
     /*      TESTING FOR dC_dz

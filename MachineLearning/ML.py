@@ -6,10 +6,12 @@ Created on Wed Mar 13 16:42:13 2019
 @author: Minh Nguyen
 """
 
-from graphviz import Digraph
+#from graphviz import Digraph
+import pandas as pd
 from matplotlib import pyplot as plt
 from math import log2
 import numpy as np
+#from collections import Counter
 
 def Gridify(string):
     size = int(len(string)**0.5)
@@ -76,7 +78,7 @@ plt.colorbar()
 plt.savefig('img/hamming.png', dpi=300)
 '''
 
-
+'''    ENERGY LANDSCAPE
 a=np.loadtxt("files/landscape_energy.txt")
 fig = plt.figure()
 myDict = np.zeros(len(a))
@@ -93,6 +95,38 @@ for i in range(0, len(b[:,0])):
 
 #plt.show()
 plt.savefig('img/landscape_pyplot.png', dpi=300)
+'''
+
+'''    FEEDFORWARD NETWORK z VS betaJ    '''
+file_name = 'files/z_vs_betaJ.txt'
+z_betaJ_list = []
+with open(file_name) as f:
+    for line in f:
+        pair = [ float(l) for l in line.strip().split() ]
+        z_betaJ_list.append(pair)
+
+df = pd.DataFrame(z_betaJ_list, columns=['z','betaJ'])
+dfgroup = df.groupby(['betaJ']).mean().reset_index()
+
+print(dfgroup)
+
+z_list = dfgroup['z'].tolist()
+beta_list = dfgroup['betaJ'].tolist()
+
+assert len(z_list) == len(beta_list), \
+        'z_list and beta_list have different lengths'
+
+fig = plt.figure()
+plt.title(r'$z^{(L)}$ vs $\beta J$')
+plt.xlabel(r'$\beta J$')
+plt.ylabel(r'$z^{(L)}$')
+plt.plot(beta_list, z_list, label=r'$z^{(L)}$ vs $\beta J$')
+plt.axvline(0.44,color='y', label=r'$\beta J \approx 0.44$')
+plt.legend()
+plt.show()
+
+#for z,beta in zip(z_list, beta_list):
+
 
 
 

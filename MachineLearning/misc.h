@@ -22,14 +22,14 @@
 #include <cstring>
 #include <algorithm>
 
-#include <Eigen/Dense>
+#include <Eigen/Eigen>
 using namespace std;
 using namespace Eigen;
 
 random_device rd;
 mt19937 mt(rd());
 const int num_sweeps = 200000;
-const double delta = 1E-9;
+const double fin_Delta = 1E-10;
 //const int start_time = 0;
 string  out_folder_files    = "files/",
         out_folder_img      = "img/";
@@ -70,7 +70,7 @@ string zfill(int s, unsigned int z) {
     return str;
 }
 
-string dtos(double db, int prec) {
+string dtos(double db, int prec=6) {
     stringstream stream;
     stream << fixed << setprecision(prec) << db;
     string s = stream.str();
@@ -148,17 +148,60 @@ double CostCrossEntropy(VectorXd& outV, VectorXd& expV) {
     return CVec.sum();
 }
 
-VectorXd dSigmoid_dz(VectorXd& y) {
+VectorXd dSigmoid_dy(VectorXd& y) {
     VectorXd ones = VectorXd::Ones(y.size());
-    VectorXd fy = y.unaryExpr(sigmoid);
+    VectorXd fy = y.unaryExpr(&sigmoid);
     return (fy).cwiseProduct(ones - fy);
 }
 
-VectorXd dC_dz(VectorXd& outV, VectorXd& expV) {
+VectorXd dCE_dz(VectorXd& outV, VectorXd& expV) {
     assert(outV.size() == expV.size());
     VectorXd ones = VectorXd::Ones(outV.size());
     VectorXd dCdz = -expV.cwiseQuotient(outV) + (ones-expV).cwiseQuotient(ones-outV);
     return dCdz;
+}
+
+int reverseInt (int i)
+{
+    unsigned char c1, c2, c3, c4;
+    
+    c1 = i & 255;
+    c2 = (i >> 8) & 255;
+    c3 = (i >> 16) & 255;
+    c4 = (i >> 24) & 255;
+    
+    return ((int)c1 << 24) + ((int)c2 << 16) + ((int)c3 << 8) + c4;
+}
+void read_mnist(/*string full_path*/)
+{
+    ifstream file (/*full_path*/"t10k-images-idx3-ubyte");
+    if (file.is_open())
+    {
+        int magic_number=0;
+        int number_of_images=0;
+        int n_rows=0;
+        int n_cols=0;
+        file.read((char*)&magic_number,sizeof(magic_number));
+        magic_number= reverseInt(magic_number);
+        file.read((char*)&number_of_images,sizeof(number_of_images));
+        number_of_images= reverseInt(number_of_images);
+        file.read((char*)&n_rows,sizeof(n_rows));
+        n_rows= reverseInt(n_rows);
+        file.read((char*)&n_cols,sizeof(n_cols));
+        n_cols= reverseInt(n_cols);
+        for(int i=0;i<number_of_images;++i)
+        {
+            for(int r=0;r<n_rows;++r)
+            {
+                for(int c=0;c<n_cols;++c)
+                {
+                    unsigned char temp=0;
+                    file.read((char*)&temp,sizeof(temp));
+                    
+                }
+            }
+        }
+    }
 }
 
 #endif /* misc_h */
