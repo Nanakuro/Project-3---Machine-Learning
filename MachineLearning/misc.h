@@ -32,7 +32,8 @@ const int num_sweeps = 200000;
 const double fin_Delta = 1E-10;
 //const int start_time = 0;
 string  out_folder_files    = "files/",
-        out_folder_img      = "img/";
+        out_folder_img      = "img/",
+        rbm_folder          = out_folder_files + "rbm/";
 
 
 string intToBin(unsigned int n) {

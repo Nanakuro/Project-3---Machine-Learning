@@ -97,7 +97,7 @@ for i in range(0, len(b[:,0])):
 plt.savefig('img/landscape_pyplot.png', dpi=300)
 '''
 
-'''    FEEDFORWARD NETWORK z VS betaJ    '''
+'''    FEEDFORWARD NETWORK zL VS betaJ    
 file_name = 'files/z_vs_betaJ.txt'
 z_betaJ_list = []
 with open(file_name) as f:
@@ -121,14 +121,43 @@ plt.title(r'$z^{(L)}$ vs $\beta J$')
 plt.xlabel(r'$\beta J$')
 plt.ylabel(r'$z^{(L)}$')
 plt.plot(beta_list, z_list, label=r'$z^{(L)}$ vs $\beta J$')
-plt.axvline(0.44,color='y', label=r'$\beta J \approx 0.44$')
+plt.axvline(0.44,color='y', label=r'$\beta J = 0.44$')
 plt.legend()
+
+plt.savefig('img/zL_vs_betaJ.png', dpi=300)
+#plt.show()
+'''
+
+
+'''    RBM TEST PDF    '''
+prob_str = 'pv-h'
+sample_file = 'files/rbm/rbm_' + prob_str + '.txt'
+test_file   = 'files/rbm/test_' + prob_str + '.txt'
+
+samp_vis = 0
+samp_prob = []
+
+test_hid = []
+test_prob = []
+
+with open(sample_file,'r') as samp, open(test_file,'r') as test:
+    samp_vis = int(samp.readline())
+    samp_prob = [ int(s) for s in samp.readline().strip().split() ]
+    
+
+    for line in test:
+        line = line.strip().split()
+        test_hid.append(int(line[0]))
+        test_prob.append(float(line[1]))
+        
+
+print(samp_prob[:10])
+print(len(samp_prob))
+
+fig = plt.figure()
+plt.plot(test_hid, test_prob, '-r')
+plt.hist(samp_prob, bins=test_hid)
 plt.show()
-
-#for z,beta in zip(z_list, beta_list):
-
-
-
 
 
 

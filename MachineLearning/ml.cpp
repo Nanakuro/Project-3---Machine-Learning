@@ -6,7 +6,8 @@
 //  Copyright © 2019 Minh. All rights reserved.
 //
 
-#include "FFNN.h"
+//#include "FFNN.h"
+#include "RBM.h"
 
 vector<pair<VectorXd,VectorXd>> readDataset(string data_file, string label_file) {
     vector<pair<VectorXd,VectorXd>> Dataset;
@@ -193,5 +194,41 @@ int main(int argc, const char * argv[]) {
      */
     
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    
+///////////////////////////////////// RESTRICTED BOLTZMANN MACHINE /////////////////////////////////////
+    
+    string rbm_pv_h = rbm_folder+"rbm_pv-h.txt", test_pv_h = rbm_folder+"test_pv-h.txt",
+           rbm_ph_v = rbm_folder+"rbm_ph-v.txt", test_ph_v = rbm_folder+"test_ph-v.txt",
+           rbm_pv   = rbm_folder+"rbm_pv.txt"  , test_pv   = rbm_folder+"test_pv.txt",
+           rbm_ph   = rbm_folder+"rbm_ph.txt"  , test_ph   = rbm_folder+"test_ph.txt",
+           rbm_pvh  = rbm_folder+"rbm_pvh.txt" , test_pvh  = rbm_folder+"test_pvh.txt";
+
+    ofstream rbmPv_h(rbm_pv_h,fstream::trunc), testPv_h(test_pv_h, fstream::trunc);
+    
+    int vis = 2, hid = 5;
+    int num_samples = 1E5;
+    
+    RBM myRBM(vis,hid);
+    
+    rbmPv_h << myRBM.visState() << endl;
+    for (int n=0; n<num_samples; ++n) {
+        myRBM.Gibbs1();
+        rbmPv_h << myRBM.hidState() << " ";
+    }
+    rbmPv_h << endl;
+    
+    for (int s=0; s<myRBM.getTotHidState(); ++s) {
+        myRBM.setHidState(s);
+        double p = myRBM.condiP("v|h")*num_samples*num_samples/500;
+        testPv_h << s << " " << p << endl;
+    }
+    rbmPv_h.close();
+    testPv_h.close();
+    
+    
+    
+    
+////////////////////////////////////////////////////////////////////////////////////////////////////////
     return 0;
 }
