@@ -125,8 +125,8 @@ int main(int argc, const char * argv[]) {
      */
     
     /*      COMPARE FINITE DIFFERENCE AND BACKPROPAGATION
-    double nu = 1.0;
-    vector<int> neurons {4,3,3,2,2};
+    double eta = 1.0;
+    vector<int> neurons {4,3,2};
     uniform_int_distribution<int> rand_int(0,1);
     VectorXd v1 = VectorXd::NullaryExpr(4, [&]() { return rand_int(mt); }),
              v2 = VectorXd::NullaryExpr(4, [&]() { return rand_int(mt); }),
@@ -144,6 +144,10 @@ int main(int argc, const char * argv[]) {
                                            make_pair(v2, v5),
                                            make_pair(v3, v6),
                                            make_pair(v4, v6)};
+    FFNN myNetwork(neurons,Data);
+    myNetwork.setLearnRate(eta);
+    
+    
     cout << "##################" << endl
          << "Finite Difference:" << endl
          << "##################" << endl;
@@ -157,28 +161,31 @@ int main(int argc, const char * argv[]) {
          << "################" << endl;
     myNetwork.backPropagate(0, 4);
     myNetwork.printdC();
-    */
+     */
+    
     
     
     /*      TESTING FOR dC_dz
     uniform_real_distribution<double> rand(0,1);
-    for (int n=0; n<50; ++n) {
+    cout << "Difference between finite difference gradient and exact derivative formula:" << endl << endl;
+    for (int n=0; n<30; ++n) {
         VectorXd v = VectorXd::NullaryExpr(5, [&](){ return rand(mt); });
         VectorXd w = VectorXd::NullaryExpr(5, [&](){ return rand_int(mt); });
-        VectorXd exactDiff = dC_dz(v, w);
+        VectorXd exactDiff = dCE_dz(v, w);
         
         for (int i=0; i<v.size(); ++i) {
             double Ci = CostCrossEntropy(v, w);
-            v(i) += delta;
+            v(i) += fin_Delta;
             double Cf = CostCrossEntropy(v, w);
-            v(i) -= delta;
-            double dC = (Cf - Ci)/delta;
-            cout << dC - exactDiff(i) << " ";
+            v(i) -= fin_Delta;
+            double dC = (Cf - Ci)/fin_Delta;
+            cout << dC - exactDiff(i) << "\t";
             assert(dC - exactDiff(i) <= 1E-3);
         }
         cout << endl;
     }
      */
+     
     
     
     /*      TESTING FOR FINITE DIFFERENCE GRAD. DESCENT
@@ -198,33 +205,50 @@ int main(int argc, const char * argv[]) {
     
 ///////////////////////////////////// RESTRICTED BOLTZMANN MACHINE /////////////////////////////////////
     
-    string rbm_pv_h = rbm_folder+"rbm_pv-h.txt", test_pv_h = rbm_folder+"test_pv-h.txt",
-           rbm_ph_v = rbm_folder+"rbm_ph-v.txt", test_ph_v = rbm_folder+"test_ph-v.txt",
-           rbm_pv   = rbm_folder+"rbm_pv.txt"  , test_pv   = rbm_folder+"test_pv.txt",
-           rbm_ph   = rbm_folder+"rbm_ph.txt"  , test_ph   = rbm_folder+"test_ph.txt",
-           rbm_pvh  = rbm_folder+"rbm_pvh.txt" , test_pvh  = rbm_folder+"test_pvh.txt";
-
-    ofstream rbmPv_h(rbm_pv_h,fstream::trunc), testPv_h(test_pv_h, fstream::trunc);
-    
     int vis = 2, hid = 5;
     int num_samples = 1E5;
     
     RBM myRBM(vis,hid);
     
-    rbmPv_h << myRBM.visState() << endl;
-    for (int n=0; n<num_samples; ++n) {
-        myRBM.Gibbs1();
-        rbmPv_h << myRBM.hidState() << " ";
-    }
-    rbmPv_h << endl;
+    vector<string> probs {"pv-h","ph-v","pv","ph","pvh"};
     
+    //////////////// P(v|h) ////////////////
+    string prob_str = "pv-h";
+    string rbm_name = rbm_folder +"rbm_"+ prob_str + ".txt",
+    test_name = rbm_folder +"test_"+ prob_str + ".txt";
+    ofstream rbmFile(rbm_name,fstream::trunc), testFile(test_name, fstream::trunc);
+    rbmFile << myRBM.hidState() << endl;
+    for (int n=0; n<num_samples; ++n) {
+        myRBM.GibbsVH();
+        rbmFile << myRBM.visState() << " ";
+    }
+    rbmFile << endl;
+    for (int s=0; s<myRBM.getTotVisState(); ++s) {
+        myRBM.setVisState(s);
+        double p = myRBM.condiP("v|h");
+        testFile << s << " " << p << endl;
+    }
+    rbmFile.close();
+    testFile.close();
+    
+    //////////////// P(v|h) ////////////////
+    prob_str = "ph-v";
+    rbm_name = rbm_folder +"rbm_"+ prob_str + ".txt";
+    test_name = rbm_folder +"test_"+ prob_str + ".txt";
+    rbmFile.open(rbm_name,fstream::trunc); testFile.open(test_name, fstream::trunc);
+    rbmFile << myRBM.visState() << endl;
+    for (int n=0; n<num_samples; ++n) {
+        myRBM.GibbsHV();
+        rbmFile << myRBM.hidState() << " ";
+    }
+    rbmFile << endl;
     for (int s=0; s<myRBM.getTotHidState(); ++s) {
         myRBM.setHidState(s);
-        double p = myRBM.condiP("v|h")*num_samples*num_samples/500;
-        testPv_h << s << " " << p << endl;
+        double p = myRBM.condiP("h|v");
+        testFile << s << " " << p << endl;
     }
-    rbmPv_h.close();
-    testPv_h.close();
+    rbmFile.close();
+    testFile.close();
     
     
     

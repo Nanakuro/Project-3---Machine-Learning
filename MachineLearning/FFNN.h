@@ -243,11 +243,10 @@ FFNN::FFNN(vector<int> layer_neurons, vector<pair<VectorXd, VectorXd>> Data) {
         LabelSet.push_back(DataSet[i].second);
     }
     num_lay = (int)layer_neurons.size()-1;
-    Layers.resize(num_lay);
     for (int i=0; i<num_lay; ++i) {
         int n_in  = layer_neurons[i],
             n_out = layer_neurons[i+1];
-        Layers[i] = Layer(n_in, n_out);
+        Layers.push_back(Layer(n_in, n_out));
     }
 }
 

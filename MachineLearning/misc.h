@@ -162,6 +162,14 @@ VectorXd dCE_dz(VectorXd& outV, VectorXd& expV) {
     return dCdz;
 }
 
+VectorXd stateNumToVec(unsigned int state, unsigned int len) {
+    string str = zfill(intToBin(state), len);
+    VectorXd v(str.size());
+    for (int i=0; i<str.size(); ++i) { v(i) = (str[i]=='1') ? 1.0 : -1.0; }
+    return v;
+}
+
+
 int reverseInt (int i)
 {
     unsigned char c1, c2, c3, c4;

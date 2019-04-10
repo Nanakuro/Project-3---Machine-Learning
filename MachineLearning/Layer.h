@@ -73,7 +73,7 @@ public:
 int Layer::num_layer = 0;
 
 Layer::Layer() {
-    lay = num_layer++;
+    lay = ++num_layer;
     f = &sigmoid;
     num_input  = 2;
     num_output = num_input;
@@ -83,7 +83,7 @@ Layer::Layer() {
 }
 
 Layer::Layer(int n_in, int n_out) {
-    lay = num_layer++;
+    lay = ++num_layer;
     f = &sigmoid;
     num_input = n_in;
     num_output = n_out;
@@ -93,7 +93,7 @@ Layer::Layer(int n_in, int n_out) {
 }
 
 Layer::Layer(int n_in, int n_out, double (*func)(double)) {
-    lay = num_layer++;
+    lay = ++num_layer;
     f = func;
     num_input = n_in;
     num_output = n_out;

@@ -23,14 +23,14 @@ public:
     VectorXd hid_eff_field() { return Weights.transpose()*visible + hid_bias; }
     VectorXd vis_eff_field() { return Weights*hidden + vis_bias; }
     
-    VectorXd ph_v_vec() { return hid_eff_field().unaryExpr( [](double x){return 1.0/(1+exp(-2*x));} ); }
-    VectorXd pv_h_vec() { return vis_eff_field().unaryExpr( [](double x){return 1.0/(1+exp(-2*x));} ); }
+    VectorXd ph_v_vec() { return hid_eff_field().unaryExpr( [](double x){return 1.0/(1.0+exp(-2*x));} ); }
+    VectorXd pv_h_vec() { return vis_eff_field().unaryExpr( [](double x){return 1.0/(1.0+exp(-2*x));} ); }
     
     void setNewTemp(VectorXd vis_new, VectorXd hid_new) { vis_temp = vis_new; hid_temp = hid_new; }
-    void save() { setNewTemp(visible, hidden); }
-    void resetV() {visible = vis_temp;}
-    void resetH() {hidden = hid_temp;}
-    void reset() { resetV(); resetH(); }
+    void save()     { setNewTemp(visible, hidden); }
+    void resetV()   { visible = vis_temp; }
+    void resetH()   { hidden = hid_temp; }
+    void reset()    { resetV(); resetH(); }
     
     void binToNeurons(string binary, string layer) {
         if (layer=="v") {
@@ -50,7 +50,7 @@ public:
     string getVisBinary() {
         string bin = "";
         for (int v=0; v<visible.size(); ++v) {
-            bin += visible(v)==1.0 ? "1" : "0";
+            bin += visible(v) > 0 ? "1" : "0";
         }
         return bin;
     }
@@ -58,7 +58,7 @@ public:
     string getHidBinary() {
         string bin = "";
         for (int h=0; h<hidden.size(); ++h) {
-            bin += hidden(h)==1.0 ? "1" : "0";
+            bin += hidden(h) > 0 ? "1" : "0";
         }
         return bin;
     }
@@ -72,68 +72,55 @@ public:
     double getE() { return visible.dot(-Weights*hidden - vis_bias) - hidden.dot(hid_bias); }
     double getE(VectorXd v, VectorXd h) {
         assert(v.size() == visible.size() && h.size()==hidden.size());
-        return v.dot(-Weights*hidden - vis_bias) - h.dot(hid_bias);
+        return v.dot(-Weights*h - vis_bias) - h.dot(hid_bias);
     }
     
     double getZ() {
-        save();
         double Z = 0.0;
         for (int v=0; v<totVisState; ++v) {
-            setVisState(v);
+            VectorXd vVec = stateNumToVec(v, (int)visible.size());
             for (int h=0; h<totHidState; ++h) {
-                setHidState(h);
-//                string vis_state = zfill(intToBin(v), (int)visible.size());
-//                string hid_state = zfill(intToBin(h), (int)hidden.size());
-//
-//                binToNeurons(vis_state, "v");
-//                binToNeurons(hid_state, "h");
-                Z += exp(-getE());
+                VectorXd hVec = stateNumToVec(h, (int)hidden.size());
+
+                Z += exp(-getE(vVec,hVec));
             }
         }
-        reset();
         return Z;
     }
     
-    double sumP_v() {
-        save();
+    double jointP()                         { return exp(-getE())/getZ(); }
+    double jointP(VectorXd v, VectorXd h)   { return exp(-getE(v,h))/getZ(); }
+    
+    double sum_joint_Pv() {
         double sum_p = 0.0;
         for (int v=0; v<totVisState; ++v) {
-            string vis_state = zfill(intToBin(v), (int)visible.size());
-            binToNeurons(vis_state, "v");
-            sum_p += exp(-getE());
+            VectorXd vis = stateNumToVec(v,(int)visible.size());
+            sum_p += jointP(vis, hidden);
         }
-        reset();
         return sum_p;
     }
-    
-    double sumP_h() {
-        save();
+    double sum_joint_Ph() {
         double sum_p = 0.0;
         for (int h=0; h<totHidState; ++h) {
-            string hid_state = zfill(intToBin(h), (int)hidden.size());
-            binToNeurons(hid_state, "h");
-            sum_p += exp(-getE());
+            VectorXd hid = stateNumToVec(h,(int)hidden.size());
+            sum_p += jointP(visible, hid);
         }
-        reset();
         return sum_p;
     }
     
-    double jointP() { double pvh = exp(-getE()); return pvh/getZ(); }
-    double jointP(VectorXd v, VectorXd h) { visible = v; hidden = h; return jointP(); }
-    
     double marginalP(string layer) {
-        double sumP = 0.0;
-        if (layer=="v")      { sumP = sumP_v(); }
-        else if (layer=="h") { sumP = sumP_h(); }
+        double sumP;
+        if (layer=="v")      { sumP = sum_joint_Ph(); }
+        else if (layer=="h") { sumP = sum_joint_Pv(); }
         else                 { throw invalid_argument("Invalid mode (\"v\" or \"h\" only)"); }
         return sumP/getZ();
     }
     
     double condiP(string layer) {
         double joint = jointP();
-        double sumP = 0.0;
-        if (layer=="v|h")      { sumP = sumP_v(); }
-        else if (layer=="h|v") { sumP = sumP_h(); }
+        double sumP;
+        if (layer=="v|h")      { sumP = sum_joint_Pv(); }
+        else if (layer=="h|v") { sumP = sum_joint_Ph(); }
         else                   { throw invalid_argument("Invalid mode (\"v|h\" or \"h|v\" only)"); }
         return joint/sumP;
     }
@@ -143,24 +130,22 @@ public:
     
     
     
-    void Gibbs1() {
+    void GibbsHV() {
         uniform_real_distribution<double> rand(0,1);
         VectorXd p_hv = ph_v_vec();
-        assert(p_hv.size() == hidden.size());
         for (int i=0; i<hidden.size(); ++i) { hidden(i) = rand(mt) < p_hv(i) ? 1.0 : -1.0; }
     }
     
-    void Gibbs2() {
+    void GibbsVH() {
         uniform_real_distribution<double> rand(0,1);
         VectorXd p_vh = pv_h_vec();
-        assert(p_vh.size() == visible.size());
         for (int i=0; i<visible.size(); ++i) { visible(i) = rand(mt) < p_vh(i) ? 1.0 : -1.0; }
     }
     
     void GibbsSampling(int iter=1) {
         while (iter>0) {
-            Gibbs1();
-            Gibbs2();
+            GibbsHV();
+            GibbsVH();
             --iter;
         }
     }

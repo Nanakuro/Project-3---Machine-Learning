@@ -130,36 +130,54 @@ plt.savefig('img/zL_vs_betaJ.png', dpi=300)
 
 
 '''    RBM TEST PDF    '''
-prob_str = 'pv-h'
-sample_file = 'files/rbm/rbm_' + prob_str + '.txt'
-test_file   = 'files/rbm/test_' + prob_str + '.txt'
+prob_str_arr = {'pv-h' : 'v|h',
+                'ph-v' : 'h|v',
+                'ph'   : 'h',
+                'pv'   : 'v',
+                'pvh'  : 'v,h'}
 
-samp_vis = 0
-samp_prob = []
-
-test_hid = []
-test_prob = []
-
-with open(sample_file,'r') as samp, open(test_file,'r') as test:
-    samp_vis = int(samp.readline())
-    samp_prob = [ int(s) for s in samp.readline().strip().split() ]
+def PlotPDF(prob_str):
+    #prob_str = 'pv-h'
+    sample_file = 'files/rbm/rbm_' + prob_str + '.txt'
+    test_file   = 'files/rbm/test_' + prob_str + '.txt'
     
-
-    for line in test:
-        line = line.strip().split()
-        test_hid.append(int(line[0]))
-        test_prob.append(float(line[1]))
+    #samp_vis = 0
+    samp_prob = []
+    
+    test_hid = []
+    test_prob = []
+    
+    with open(sample_file,'r') as samp, open(test_file,'r') as test:
+        samp_vis = int(samp.readline())
+        samp_prob = [ int(s) for s in samp.readline().strip().split() ]
         
+    
+        for line in test:
+            line = line.strip().split()
+            test_hid.append(int(line[0]))
+            test_prob.append(float(line[1]))
+    
+    test_bins = np.arange(0,len(test_hid)+1,1)
+    #print(test_bins)
+    
+    fig = plt.figure()
+    plt.plot(test_hid, test_prob, '-r', label=r'theoretical' )
+    n,bins = np.histogram(samp_prob, bins=test_bins, density=True)#, label='data')
+    mid = 0.5*(bins[1:] + bins[:-1]) - 0.5
+    width = 1
+    plt.bar(mid, n, width=width, align='center', label=r'sample')
+    
+    max_err = max(abs(np.array(test_prob)-np.array(n)))
+    print(f'\nMax error P({prob_str_arr[prob_str]}) = {max_err}')
+    
+    plt.title(r'$P(%s)$' % prob_str_arr[prob_str])
+    plt.xlabel(r'State')
+    plt.ylabel(r'Probability')
+    plt.legend()
+    plt.show()
 
-print(samp_prob[:10])
-print(len(samp_prob))
-
-fig = plt.figure()
-plt.plot(test_hid, test_prob, '-r')
-plt.hist(samp_prob, bins=test_hid)
-plt.show()
-
-
+PlotPDF('ph-v')
+PlotPDF('pv-h')
 
     
     
