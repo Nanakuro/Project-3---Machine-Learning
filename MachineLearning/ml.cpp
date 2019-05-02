@@ -45,13 +45,17 @@ vector<pair<VectorXd,VectorXd>> readDataset(string data_file, string label_file)
     shuffle(begin(Dataset), end(Dataset), rng);
     
     cout << "done" << endl;
-    
-    
     return Dataset;
 }
 
 vector<pair<VectorXd,VectorXd>> readDataset(string name) {
     return readDataset(name+"Data.txt", name+"Labels.txt");
+}
+
+string multiply(string str, int times) {
+    string out = "";
+    for (int i=0; i<times; ++i) { out += str; }
+    return out;
 }
 
 int main(int argc, const char * argv[]) {
@@ -205,54 +209,95 @@ int main(int argc, const char * argv[]) {
     
 ///////////////////////////////////// RESTRICTED BOLTZMANN MACHINE /////////////////////////////////////
     
-    int vis = 2, hid = 5;
+    int vis = 2, hid = 5, k_iter = 10;
     int num_samples = 1E5;
     
     RBM myRBM(vis,hid);
     
     vector<string> probs {"pv-h","ph-v","pv","ph","pvh"};
     
-    //////////////// P(v|h) ////////////////
-    string prob_str = "pv-h";
-    string rbm_name = rbm_folder +"rbm_"+ prob_str + ".txt",
-    test_name = rbm_folder +"test_"+ prob_str + ".txt";
-    ofstream rbmFile(rbm_name,fstream::trunc), testFile(test_name, fstream::trunc);
-    rbmFile << myRBM.hidState() << endl;
-    for (int n=0; n<num_samples; ++n) {
-        myRBM.GibbsVH();
-        rbmFile << myRBM.visState() << " ";
-    }
-    rbmFile << endl;
-    for (int s=0; s<myRBM.getTotVisState(); ++s) {
-        myRBM.setVisState(s);
-        double p = myRBM.condiP("v|h");
-        testFile << s << " " << p << endl;
-    }
-    rbmFile.close();
-    testFile.close();
+    bool v_h = false,
+         h_v = false,
+         vh  = true;
     
     //////////////// P(v|h) ////////////////
-    prob_str = "ph-v";
-    rbm_name = rbm_folder +"rbm_"+ prob_str + ".txt";
-    test_name = rbm_folder +"test_"+ prob_str + ".txt";
-    rbmFile.open(rbm_name,fstream::trunc); testFile.open(test_name, fstream::trunc);
-    rbmFile << myRBM.visState() << endl;
-    for (int n=0; n<num_samples; ++n) {
-        myRBM.GibbsHV();
-        rbmFile << myRBM.hidState() << " ";
+    if (v_h) {
+        string prob_str = "pv-h";
+        string rbm_name  = rbm_folder +"rbm_" + prob_str + ".txt",
+               test_name = rbm_folder +"test_"+ prob_str + ".txt";
+        ofstream rbmFile (rbm_name , fstream::trunc),
+                 testFile(test_name, fstream::trunc);
+        
+        rbmFile << myRBM.hidState() << endl;
+        for (int n=0; n<num_samples; ++n) {
+            myRBM.GibbsVH();
+            rbmFile << myRBM.visState() << " ";
+        }
+        rbmFile << endl;
+        
+        for (int s=0; s<myRBM.getTotVisState(); ++s) {
+            myRBM.setVisState(s);
+            double p = myRBM.condiP("v|h");
+            testFile << s << " " << p << endl;
+        }
+        rbmFile.close();
+        testFile.close();
     }
-    rbmFile << endl;
-    for (int s=0; s<myRBM.getTotHidState(); ++s) {
-        myRBM.setHidState(s);
-        double p = myRBM.condiP("h|v");
-        testFile << s << " " << p << endl;
+    
+    //////////////// P(v|h) ////////////////
+    if (h_v) {
+        string prob_str = "ph-v";
+        string rbm_name  = rbm_folder +"rbm_" + prob_str + ".txt",
+               test_name = rbm_folder +"test_"+ prob_str + ".txt";
+        ofstream rbmFile (rbm_name , fstream::trunc),
+                 testFile(test_name, fstream::trunc);
+        
+        rbmFile << myRBM.visState() << endl;
+        for (int n=0; n<num_samples; ++n) {
+            myRBM.GibbsHV();
+            rbmFile << myRBM.hidState() << " ";
+        }
+        rbmFile << endl;
+        
+        for (int s=0; s<myRBM.getTotHidState(); ++s) {
+            myRBM.setHidState(s);
+            double p = myRBM.condiP("h|v");
+            testFile << s << " " << p << endl;
+        }
+        rbmFile.close();
+        testFile.close();
     }
-    rbmFile.close();
-    testFile.close();
     
+    //////////////// P(v,h) ////////////////
     
+    if (vh) {
+        string prob_str = "pvh";
+        string rbm_name  = rbm_folder +"rbm_" + prob_str + ".txt",
+               test_name = rbm_folder +"test_"+ prob_str + ".txt";
+        ofstream rbmFile (rbm_name , fstream::trunc),
+                 testFile(test_name, fstream::trunc);
     
+        for (int i=0; i<num_samples; ++i) {
+            myRBM.randomize();
+            myRBM.GibbsSampling(k_iter);
+            string bin = myRBM.getVisBinary()+myRBM.getHidBinary();
+            rbmFile << bin << endl;
+        }
+        
+        for (int v=0; v<myRBM.getTotVisState(); ++v) {
+            myRBM.setVisState(v);
+            for (int h=0; h<myRBM.getTotHidState(); ++h) {
+                myRBM.setHidState(h);
+                string bin = myRBM.getVisBinary()+myRBM.getHidBinary();
+                testFile << bin << " " << myRBM.jointP() << endl;
+            }
+        }
+    
+        rbmFile.close();
+        testFile.close();
+    }
     
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
     return 0;
 }

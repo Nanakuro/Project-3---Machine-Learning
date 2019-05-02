@@ -47,6 +47,16 @@ public:
     void setVisState(int v) { binToNeurons(zfill(intToBin(v),(int)visible.size()), "v"); }
     void setHidState(int h) { binToNeurons(zfill(intToBin(h),(int)hidden.size()), "h"); }
     
+    void randomVis() {
+        uniform_int_distribution<int> rand_int(0,1);
+        for (int v=0; v<visible.size(); ++v) { visible(v) = rand_int(mt)==1 ? 1.0 : -1.0; }
+    }
+    void randomHid() {
+        uniform_int_distribution<int> rand_int(0,1);
+        for (int h=0; h<hidden.size(); ++h) { hidden(h) = rand_int(mt)==1 ? 1.0 : -1.0; }
+    }
+    void randomize() { randomVis(); randomHid(); }
+    
     string getVisBinary() {
         string bin = "";
         for (int v=0; v<visible.size(); ++v) {

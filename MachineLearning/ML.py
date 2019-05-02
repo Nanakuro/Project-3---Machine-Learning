@@ -136,20 +136,21 @@ prob_str_arr = {'pv-h' : 'v|h',
                 'pv'   : 'v',
                 'pvh'  : 'v,h'}
 
-def PlotPDF(prob_str):
-    #prob_str = 'pv-h'
+def PlotPDF(prob_str, pv=False, ph=False):
     sample_file = 'files/rbm/rbm_' + prob_str + '.txt'
     test_file   = 'files/rbm/test_' + prob_str + '.txt'
-    
-    #samp_vis = 0
+
     samp_prob = []
     
     test_hid = []
     test_prob = []
     
     with open(sample_file,'r') as samp, open(test_file,'r') as test:
-        samp_vis = int(samp.readline())
-        samp_prob = [ int(s) for s in samp.readline().strip().split() ]
+        if prob_str != 'pvh':
+            samp_vis = int(samp.readline())
+            samp_prob = [ int(s) for s in samp.readline().strip().split() ]
+        else:
+            samp_prob = [ int(l) for l in samp ]
         
     
         for line in test:
@@ -159,12 +160,13 @@ def PlotPDF(prob_str):
     
     test_bins = np.arange(0,len(test_hid)+1,1)
     #print(test_bins)
+    print(samp_prob[:100])
     
     fig = plt.figure()
-    plt.plot(test_hid, test_prob, '-r', label=r'theoretical' )
+    plt.plot(test_hid, test_prob, '-r', lw=1, label=r'theoretical' )
     n,bins = np.histogram(samp_prob, bins=test_bins, density=True)#, label='data')
+    width = 1.0
     mid = 0.5*(bins[1:] + bins[:-1]) - 0.5
-    width = 1
     plt.bar(mid, n, width=width, align='center', label=r'sample')
     
     max_err = max(abs(np.array(test_prob)-np.array(n)))
@@ -178,7 +180,7 @@ def PlotPDF(prob_str):
 
 PlotPDF('ph-v')
 PlotPDF('pv-h')
-
+PlotPDF('pvh')
     
     
     
